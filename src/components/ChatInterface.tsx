@@ -6,6 +6,9 @@ import { ChatMessage } from "@/components/ChatMessage";
 import { ChatInput } from "@/components/ChatInput";
 import { SuggestionCard } from "@/components/SuggestionCard";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { sendMessageToBot } from "@/lib/api";
+import { speechService } from "@/lib/speech";
+import { toast } from "sonner";
 import {
   Clock,
   TrendingUp,
@@ -20,13 +23,19 @@ interface Message {
   text: string;
   isUser: boolean;
   timestamp: Date;
+  audioUrl?: string; // Cached audio URL for replay
+  isVoiceInput?: boolean; // Track if message was sent via voice
 }
 
 export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+  const [isUserTyping, setIsUserTyping] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const scrollToBottom = () => {
     if (scrollAreaRef.current) {
@@ -98,107 +107,288 @@ export function ChatInterface() {
     handleSendMessage(title);
   };
 
-  const handleSendMessage = async (text: string) => {
+  const handleSendMessage = async (text: string, isVoiceInput: boolean = false) => {
+    // Stop any currently playing audio when sending a new message
+    speechService.stopCurrentAudio();
+    setSpeakingMessageId(null);
+
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: `user-${Date.now()}`,
       text,
       isUser: true,
       timestamp: new Date(),
+      isVoiceInput,
     };
 
     setMessages((prev) => [...prev, userMessage]);
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      // Call the actual API
+      const response = await sendMessageToBot(text);
+      
       const botResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text:
-          language === "ne"
-            ? "नमस्ते! म पालिका एजेन्ट हुँ। म तपाईंलाई नगरपालिका सेवाहरूमा मद्दत गर्न यहाँ छु। तपाईं मलाई कसरी मद्दत गर्न सक्नुहुन्छ?"
-            : "Hello! I'm Palika Agent. I'm here to help you with municipal services. How can I assist you today?",
+        id: `bot-${Date.now()}`,
+        text: response,
+        isUser: false,
+        timestamp: new Date(),
+        isVoiceInput: false,
+      };
+
+      // Generate audio for the response (but don't play yet)
+      let audioUrl: string | undefined;
+      try {
+        audioUrl = await speechService.synthesizeToAudio(response, language);
+        botResponse.audioUrl = audioUrl;
+      } catch (audioError) {
+        console.error("Error generating audio:", audioError);
+        // Continue without audio
+      }
+      
+      setMessages((prev) => [...prev, botResponse]);
+      
+      // Auto-play ONLY if the user's message was sent via voice
+      if (isVoiceInput && audioUrl) {
+        setTimeout(() => {
+          handleSpeak(botResponse.id, response, audioUrl);
+        }, 500);
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+      
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        text: language === "ne" 
+          ? "माफ गर्नुहोस्, म अहिले जवाफ दिन सक्दिन। कृपया फेरि प्रयास गर्नुहोस्।"
+          : "Sorry, I couldn't process your request. Please try again.",
         isUser: false,
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, botResponse]);
+      
+      setMessages((prev) => [...prev, errorMessage]);
+      
+      toast.error(
+        language === "ne" ? "त्रुटि" : "Error",
+        {
+          description: error instanceof Error ? error.message : "Failed to send message",
+        }
+      );
+    } finally {
       setIsTyping(false);
+    }
+  };
+
+  const handleVoiceInput = async () => {
+    if (isListening) {
+      // Stop listening
+      speechService.stopRecognizing();
+      setIsListening(false);
+      return;
+    }
+
+    // Stop any currently playing audio when starting voice recording
+    speechService.stopCurrentAudio();
+    setSpeakingMessageId(null);
+
+    try {
+      setIsListening(true);
+      
+      toast.info(
+        language === "ne" ? "सुन्दै..." : "Listening...",
+        {
+          description: language === "ne" 
+            ? "कृपया बोल्नुहोस्..."
+            : "Please speak now...",
+        }
+      );
+
+      const recognizedText = await speechService.recognizeSpeech(language);
+      
+      if (recognizedText && recognizedText.trim()) {
+        // Pass true to indicate this is a voice input
+        await handleSendMessage(recognizedText.trim(), true);
+      }
+    } catch (error) {
+      console.error("Voice input error:", error);
+      
+      toast.error(
+        language === "ne" ? "त्रुटि" : "Error",
+        {
+          description: error instanceof Error 
+            ? error.message 
+            : language === "ne"
+              ? "आवाज पहिचान असफल भयो"
+              : "Voice recognition failed",
+        }
+      );
+    } finally {
+      setIsListening(false);
+    }
+  };
+
+  const handleSpeak = async (
+    messageId: string, 
+    text: string, 
+    audioUrl?: string
+  ) => {
+    // If already speaking this message, stop it
+    if (speakingMessageId === messageId) {
+      speechService.stopCurrentAudio();
+      setSpeakingMessageId(null);
+      return;
+    }
+
+    try {
+      // Stop any current speech
+      if (speakingMessageId) {
+        speechService.stopCurrentAudio();
+      }
+
+      setSpeakingMessageId(messageId);
+
+      // Use cached audio if available, otherwise generate new
+      if (audioUrl) {
+        await speechService.playAudio(audioUrl, true);
+      } else {
+        // Generate and play
+        const newAudioUrl = await speechService.synthesizeToAudio(text, language);
+        
+        // Update message with audio URL for future replays
+        setMessages(prev => 
+          prev.map(msg => 
+            msg.id === messageId 
+              ? { ...msg, audioUrl: newAudioUrl }
+              : msg
+          )
+        );
+        
+        await speechService.playAudio(newAudioUrl, true);
+      }
+      
+      setSpeakingMessageId(null);
+    } catch (error) {
+      console.error("Speech synthesis error:", error);
+      setSpeakingMessageId(null);
+      
+      toast.error(
+        language === "ne" ? "त्रुटि" : "Error",
+        {
+          description: language === "ne"
+            ? "आवाज प्लेब्याक असफल भयो"
+            : "Voice playback failed",
+        }
+      );
+    }
+  };
+
+  // Handle typing detection to stop audio
+  const handleTypingStart = () => {
+    if (!isUserTyping) {
+      setIsUserTyping(true);
+      // Stop any playing audio when user starts typing
+      if (speechService.isPlaying()) {
+        speechService.stopCurrentAudio();
+        setSpeakingMessageId(null);
+      }
+    }
+
+    // Reset typing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsUserTyping(false);
     }, 1000);
   };
 
-  const handleVoiceInput = () => {
-    // TODO: Implement voice input functionality
-    console.log("Voice input clicked");
-    alert(
-      language === "ne"
-        ? "आवाज इनपुट सुविधा चाँडै आउँदैछ!"
-        : "Voice input feature coming soon!"
-    );
-  };
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      speechService.stopCurrentAudio();
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
-    <div className="flex flex-col h-full">
-      <ScrollArea ref={scrollAreaRef} className="flex-1">
-        {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center px-4 py-12">
-            <div className="max-w-2xl w-full space-y-8">
-              <div className="space-y-3">
-                <h1 className="text-4xl md:text-5xl font-bold bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  {language === "ne" ? "नमस्ते" : "Hello"}
-                </h1>
-                <h2 className="text-3xl md:text-4xl font-semibold text-muted-foreground">
-                  {language === "ne"
-                    ? "आज म तपाईंलाई कसरी मद्दत गर्न सक्छु?"
-                    : "How can i help you today?"}
-                </h2>
-              </div>
+    <div className="flex flex-col h-full w-full overflow-hidden">
+      {/* Scrollable messages area */}
+      <div className="flex-1 overflow-y-auto">
+        <ScrollArea ref={scrollAreaRef} className="h-full">
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center min-h-[calc(100vh-16rem)] text-center px-4 py-12">
+              <div className="max-w-2xl w-full space-y-8">
+                <div className="space-y-3">
+                  <h1 className="text-4xl md:text-5xl font-bold bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    {language === "ne" ? "नमस्ते" : "Hello"}
+                  </h1>
+                  <h2 className="text-3xl md:text-4xl font-semibold text-muted-foreground">
+                    {language === "ne"
+                      ? "आज म तपाईंलाई कसरी मद्दत गर्न सक्छु?"
+                      : "How can i help you today?"}
+                  </h2>
+                </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-12">
-                {suggestions.map((suggestion, index) => (
-                  <SuggestionCard
-                    key={index}
-                    icon={suggestion.icon}
-                    title={suggestion.title}
-                    description={suggestion.description}
-                    onClick={() => handleSuggestionClick(suggestion.title)}
-                  />
-                ))}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-12">
+                  {suggestions.map((suggestion, index) => (
+                    <SuggestionCard
+                      key={index}
+                      icon={suggestion.icon}
+                      title={suggestion.title}
+                      description={suggestion.description}
+                      onClick={() => handleSuggestionClick(suggestion.title)}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        ) : (
-          <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
-            {messages.map((message) => (
-              <ChatMessage
-                key={message.id}
-                message={message.text}
-                isUser={message.isUser}
-                timestamp={message.timestamp}
-              />
-            ))}
-            {isTyping && (
-              <div className="flex gap-3 mb-4">
-                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                  <div className="h-4 w-4 rounded-full bg-linear-to-br from-purple-500 to-pink-500" />
-                </div>
-                <div className="bg-muted rounded-2xl rounded-tl-sm px-4 py-3">
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:-0.3s]" />
-                    <div className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:-0.15s]" />
-                    <div className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce" />
+          ) : (
+            <div className="max-w-3xl mx-auto px-4 py-6 space-y-4 pb-8">
+              {messages.map((message) => (
+                <ChatMessage
+                  key={message.id}
+                  message={message.text}
+                  isUser={message.isUser}
+                  timestamp={message.timestamp}
+                  onSpeak={
+                    !message.isUser
+                      ? () => handleSpeak(message.id, message.text, message.audioUrl)
+                      : undefined
+                  }
+                  isSpeaking={speakingMessageId === message.id}
+                  hasAudio={!!message.audioUrl}
+                />
+              ))}
+              {isTyping && (
+                <div className="flex gap-3 mb-4">
+                  <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                    <div className="h-4 w-4 rounded-full bg-linear-to-br from-purple-500 to-pink-500" />
+                  </div>
+                  <div className="bg-muted rounded-2xl rounded-tl-sm px-4 py-3">
+                    <div className="flex gap-1">
+                      <div className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:-0.3s]" />
+                      <div className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:-0.15s]" />
+                      <div className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
-      </ScrollArea>
+              )}
+            </div>
+          )}
+        </ScrollArea>
+      </div>
 
-      <div className="border-t bg-background/80 backdrop-blur-lg p-4">
+      {/* Fixed input field at bottom */}
+      <div className="shrink-0 border-t bg-background/95 backdrop-blur-lg p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
         <div className="max-w-3xl mx-auto">
           <ChatInput
-            onSendMessage={handleSendMessage}
+            onSendMessage={(text) => handleSendMessage(text, false)}
             onVoiceInput={handleVoiceInput}
+            onTypingStart={handleTypingStart}
             disabled={isTyping}
+            isListening={isListening}
           />
         </div>
       </div>

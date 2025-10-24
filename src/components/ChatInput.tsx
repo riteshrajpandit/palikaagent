@@ -3,22 +3,34 @@
 import { useState, KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Mic } from "lucide-react";
+import { Send, Mic, Square } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
   onVoiceInput: () => void;
+  onTypingStart?: () => void;
   disabled?: boolean;
+  isListening?: boolean;
 }
 
 export function ChatInput({
   onSendMessage,
   onVoiceInput,
+  onTypingStart,
   disabled = false,
+  isListening = false,
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
   const { t } = useLanguage();
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMessage(e.target.value);
+    // Notify parent that user is typing
+    if (onTypingStart && e.target.value.length > 0) {
+      onTypingStart();
+    }
+  };
 
   const handleSend = () => {
     if (message.trim() && !disabled) {
@@ -39,7 +51,7 @@ export function ChatInput({
       <div className="relative flex-1">
         <Input
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={handleInputChange}
           onKeyPress={handleKeyPress}
           placeholder={t.placeholder}
           disabled={disabled}
@@ -51,10 +63,18 @@ export function ChatInput({
           variant="ghost"
           onClick={onVoiceInput}
           disabled={disabled}
-          className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full hover:bg-primary/10"
-          title={t.voiceButton}
+          className={`absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full ${
+            isListening
+              ? "bg-red-500 hover:bg-red-600 text-white animate-pulse"
+              : "hover:bg-primary/10"
+          }`}
+          title={isListening ? t.listening : t.voiceButton}
         >
-          <Mic className="h-4 w-4" />
+          {isListening ? (
+            <Square className="h-4 w-4" />
+          ) : (
+            <Mic className="h-4 w-4" />
+          )}
         </Button>
       </div>
       <Button

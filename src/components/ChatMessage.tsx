@@ -1,16 +1,27 @@
 "use client";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Bot, User } from "lucide-react";
+import { Bot, User, Volume2, VolumeX } from "lucide-react";
 
 interface ChatMessageProps {
   message: string;
   isUser: boolean;
   timestamp: Date;
+  onSpeak?: () => void;
+  isSpeaking?: boolean;
+  hasAudio?: boolean;
 }
 
-export function ChatMessage({ message, isUser, timestamp }: ChatMessageProps) {
+export function ChatMessage({
+  message,
+  isUser,
+  timestamp,
+  onSpeak,
+  isSpeaking = false,
+  hasAudio = false,
+}: ChatMessageProps) {
   return (
     <div
       className={cn(
@@ -47,12 +58,31 @@ export function ChatMessage({ message, isUser, timestamp }: ChatMessageProps) {
             {message}
           </p>
         </div>
-        <span className="text-xs text-muted-foreground mt-1 px-1">
-          {timestamp.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </span>
+        <div className="flex items-center gap-2 mt-1 px-1">
+          <span className="text-xs text-muted-foreground">
+            {timestamp.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </span>
+          {!isUser && onSpeak && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onSpeak}
+              className={`h-5 w-5 hover:bg-accent ${
+                isSpeaking ? "text-primary animate-pulse" : ""
+              }`}
+              title={isSpeaking ? "Stop speaking" : hasAudio ? "Replay audio" : "Play audio"}
+            >
+              {isSpeaking ? (
+                <VolumeX className="h-3 w-3" />
+              ) : (
+                <Volume2 className="h-3 w-3" />
+              )}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

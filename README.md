@@ -10,10 +10,11 @@ A modern, sleek chat interface built with Next.js 16, React 19, and shadcn/ui co
 - 📱 **Responsive Layout**: Full sidebar on desktop, collapsible drawer on mobile
 - 🌓 **Theme Support**: Light, Dark, and System theme modes
 - 🌍 **Bilingual**: English and Nepali (नेपाली) language support
-- 💬 **Chat Interface**: Real-time chat with AI assistant
+- 💬 **Chat Interface**: Real-time chat with AI assistant via API
+- 🎤 **Voice Input**: Speech-to-text using Azure Speech Service
+- 🔊 **Text-to-Speech**: AI responses with Nepali voice (ne-NP-HemkalaNeural)
 - 🎴 **Suggestion Cards**: Interactive cards for common queries
 - 📚 **Chat History**: Sidebar with recent conversations
-- 🎤 **Voice Input**: Ready for voice interaction (coming soon)
 - ⚡ **Fast**: Built with Next.js 16 and Turbopack
 
 ## 🚀 Getting Started
@@ -22,6 +23,7 @@ A modern, sleek chat interface built with Next.js 16, React 19, and shadcn/ui co
 
 - Node.js 20+ 
 - pnpm (or npm/yarn)
+- Azure Speech Service subscription (for voice features)
 
 ### Installation
 
@@ -29,6 +31,24 @@ A modern, sleek chat interface built with Next.js 16, React 19, and shadcn/ui co
 # Install dependencies
 pnpm install
 
+# Set up environment variables
+cp .env.example .env.local
+# Edit .env.local with your actual credentials
+```
+
+### Environment Variables
+
+Create a `.env.local` file in the root directory:
+
+```env
+NEXT_PUBLIC_API_URL=https://palika.amigaa.com/api/v1/palika/bot/
+NEXT_PUBLIC_AZURE_SPEECH_KEY=your_azure_speech_key
+NEXT_PUBLIC_AZURE_SPEECH_REGION=southeastasia
+```
+
+### Running the Application
+
+```bash
 # Run the development server
 pnpm dev
 ```
@@ -44,6 +64,9 @@ Open [http://localhost:3000](http://localhost:3000) to see the application.
 - **UI Components**: shadcn/ui (New York variant)
 - **Icons**: Lucide React
 - **Fonts**: Geist Sans & Geist Mono
+- **API Client**: Axios
+- **Speech SDK**: Azure Cognitive Services Speech SDK
+- **Notifications**: Sonner
 
 ## 📁 Project Structure
 
@@ -94,12 +117,11 @@ src/
 
 ## 🔜 Coming Soon
 
-- 🎤 Voice input and speech recognition
-- 🔊 Text-to-speech responses
-- 🤖 AI chatbot integration
 - 📊 Analytics and usage tracking
 - 🗂️ Chat history persistence
 - 📤 Export chat conversations
+- 📱 Progressive Web App (PWA) support
+- 🔐 User authentication
 
 ## 🎯 Customization
 

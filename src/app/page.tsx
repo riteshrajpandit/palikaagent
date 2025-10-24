@@ -40,7 +40,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex h-screen flex-col bg-background overflow-hidden">
       <Header
         userName="Marcus Aurelius"
         userEmail="Marcaurel@gmail.com"
@@ -60,7 +60,7 @@ export default function Home() {
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-hidden">
           {/* Mobile Menu Button */}
-          <div className="lg:hidden flex items-center gap-2 p-4 border-b">
+          <div className="lg:hidden flex items-center gap-2 p-4 border-b shrink-0">
             <MobileSidebar
               onNewChat={handleNewChat}
               chatHistory={chatHistory}

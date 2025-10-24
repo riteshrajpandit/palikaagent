@@ -16,6 +16,11 @@ interface Translations {
   light: string;
   dark: string;
   system: string;
+  listening: string;
+  speaking: string;
+  stopSpeaking: string;
+  errorMessage: string;
+  noMicrophoneAccess: string;
 }
 
 const translations: Record<Language, Translations> = {
@@ -31,6 +36,11 @@ const translations: Record<Language, Translations> = {
     light: "Light",
     dark: "Dark",
     system: "System",
+    listening: "Listening...",
+    speaking: "Speaking...",
+    stopSpeaking: "Stop Speaking",
+    errorMessage: "An error occurred. Please try again.",
+    noMicrophoneAccess: "Microphone access denied. Please enable microphone permissions.",
   },
   ne: {
     title: "पालिका एजेन्ट",
@@ -44,6 +54,11 @@ const translations: Record<Language, Translations> = {
     light: "उज्यालो",
     dark: "अँध्यारो",
     system: "प्रणाली",
+    listening: "सुन्दै...",
+    speaking: "बोल्दै...",
+    stopSpeaking: "बोल्न रोक्नुहोस्",
+    errorMessage: "त्रुटि भयो। कृपया फेरि प्रयास गर्नुहोस्।",
+    noMicrophoneAccess: "माइक्रोफोन पहुँच अस्वीकृत। कृपया माइक्रोफोन अनुमति सक्षम गर्नुहोस्।",
   },
 };
 
