@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,45 +11,31 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { Globe, Moon, Sun, Monitor, ChevronDown, User } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { LoginDialog } from "@/components/LoginDialog";
+import { Globe, Moon, Sun, Monitor, User, MessageCircle, LogIn, LogOut } from "lucide-react";
 
-interface HeaderProps {
-  userName?: string;
-  userEmail?: string;
-  version?: string;
-}
-
-export function Header({ userName = "User", userEmail, version = "V 1.2" }: HeaderProps) {
+export function Header() {
   const { language, setLanguage, t } = useLanguage();
   const { theme, setTheme } = useTheme();
+  const { user, isAuthenticated, logout } = useAuth();
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-lg">
       <div className="flex h-14 items-center justify-between px-4 lg:px-6">
-        {/* Left: Version Badge */}
+        {/* Left: Palika Agent Branding */}
         <div className="flex items-center gap-3">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1 rounded-lg border-border/60"
-              >
-                <span className="text-sm font-medium">{version}</span>
-                <ChevronDown className="h-3 w-3 opacity-50" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuLabel>Version</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>V 1.2 (Current)</DropdownMenuItem>
-              <DropdownMenuItem disabled>V 1.1</DropdownMenuItem>
-              <DropdownMenuItem disabled>V 1.0</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+              <MessageCircle className="h-4 w-4 text-white" />
+            </div>
+            <span className="font-semibold text-base">
+              {language === "ne" ? "पालिका एजेन्ट" : "Palika Agent"}
+            </span>
+          </div>
         </div>
 
         {/* Right: Controls & User */}
@@ -122,40 +109,79 @@ export function Header({ userName = "User", userEmail, version = "V 1.2" }: Head
                 variant="ghost"
                 className="h-8 gap-2 px-2 hover:bg-accent"
               >
-                <span className="text-sm font-medium hidden sm:inline-block">
-                  {userName}
-                </span>
-                <Avatar className="h-7 w-7">
-                  <AvatarFallback className="bg-linear-to-br from-purple-500 to-pink-500 text-white text-xs">
-                    <User className="h-4 w-4" />
-                  </AvatarFallback>
-                </Avatar>
+                {isAuthenticated ? (
+                  <>
+                    <span className="text-sm font-medium hidden sm:inline-block">
+                      {user?.name}
+                    </span>
+                    <Avatar className="h-7 w-7">
+                      <AvatarFallback className="bg-linear-to-br from-purple-500 to-pink-500 text-white text-xs">
+                        {user?.name?.charAt(0).toUpperCase() || <User className="h-4 w-4" />}
+                      </AvatarFallback>
+                    </Avatar>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-sm font-medium hidden sm:inline-block">
+                      {language === "ne" ? "अतिथि" : "Guest"}
+                    </span>
+                    <Avatar className="h-7 w-7">
+                      <AvatarFallback className="bg-muted">
+                        <User className="h-4 w-4" />
+                      </AvatarFallback>
+                    </Avatar>
+                  </>
+                )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>
-                <div className="flex flex-col gap-1">
-                  <p className="text-sm font-medium">{userName}</p>
-                  {userEmail && (
-                    <p className="text-xs text-muted-foreground">{userEmail}</p>
-                  )}
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                {language === "ne" ? "प्रोफाइल" : "Profile"}
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                {language === "ne" ? "सेटिङहरू" : "Settings"}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                {language === "ne" ? "लग आउट" : "Log out"}
-              </DropdownMenuItem>
+              {isAuthenticated ? (
+                <>
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col gap-1">
+                      <p className="text-sm font-medium">
+                        {user?.name} {user?.surname}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {user?.email_address}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    {language === "ne" ? "प्रोफाइल" : "Profile"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    {language === "ne" ? "सेटिङहरू" : "Settings"}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={logout} className="text-red-600">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    {language === "ne" ? "लग आउट" : "Log out"}
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <>
+                  <DropdownMenuLabel>
+                    {language === "ne" ? "लग इन आवश्यक छ" : "Not signed in"}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setShowLoginDialog(true)}>
+                    <LogIn className="mr-2 h-4 w-4" />
+                    {language === "ne" ? "लग इन गर्नुहोस्" : "Sign in"}
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Login Dialog */}
+      <LoginDialog
+        open={showLoginDialog}
+        onOpenChange={setShowLoginDialog}
+      />
     </header>
   );
 }

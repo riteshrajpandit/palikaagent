@@ -4,8 +4,6 @@ import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -67,18 +65,7 @@ export function MobileSidebar({
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="w-72 p-0">
-        <SheetHeader className="p-4 pb-3">
-          <SheetTitle className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-lg bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-              <MessageCircle className="h-5 w-5 text-white" />
-            </div>
-            <span className="font-semibold text-sm">
-              {language === "ne" ? "पालिका एजेन्ट" : "Palika Agent"}
-            </span>
-          </SheetTitle>
-        </SheetHeader>
-
-        <div className="px-4 pb-3">
+        <div className="p-4">
           <input
             type="search"
             placeholder={

@@ -1,0 +1,8 @@
+
+POST https://palika.amigaa.com/auth/v1/login/
+Content-Type: application/json
+
+{
+    "email_address": "admin@example.com",
+    "password": "hellopalika@123"
+}

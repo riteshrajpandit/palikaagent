@@ -41,11 +41,7 @@ export default function Home() {
 
   return (
     <div className="flex h-screen flex-col bg-background overflow-hidden">
-      <Header
-        userName="Marcus Aurelius"
-        userEmail="Marcaurel@gmail.com"
-        version="Valerio V 1.2"
-      />
+      <Header />
       <div className="flex flex-1 overflow-hidden">
         {/* Desktop Sidebar */}
         <div className="hidden lg:block">

@@ -5,7 +5,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatMessage } from "@/components/ChatMessage";
 import { ChatInput } from "@/components/ChatInput";
 import { SuggestionCard } from "@/components/SuggestionCard";
+import { LoginDialog } from "@/components/LoginDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { sendMessageToBot } from "@/lib/api";
 import { speechService } from "@/lib/speech";
 import { toast } from "sonner";
@@ -33,8 +35,11 @@ export function ChatInterface() {
   const [isListening, setIsListening] = useState(false);
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const [isUserTyping, setIsUserTyping] = useState(false);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState<{ text: string; isVoice: boolean } | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { language } = useLanguage();
+  const { isAuthenticated, logout } = useAuth();
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const scrollToBottom = () => {
@@ -108,6 +113,21 @@ export function ChatInterface() {
   };
 
   const handleSendMessage = async (text: string, isVoiceInput: boolean = false) => {
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      setPendingMessage({ text, isVoice: isVoiceInput });
+      setShowLoginDialog(true);
+      toast.info(
+        language === "ne" ? "लग इन आवश्यक छ" : "Login Required",
+        {
+          description: language === "ne"
+            ? "कृपया सन्देश पठाउन लग इन गर्नुहोस्"
+            : "Please sign in to send messages",
+        }
+      );
+      return;
+    }
+
     // Stop any currently playing audio when sending a new message
     speechService.stopCurrentAudio();
     setSpeakingMessageId(null);
@@ -156,23 +176,42 @@ export function ChatInterface() {
     } catch (error) {
       console.error("Error sending message:", error);
       
-      const errorMessage: Message = {
-        id: `error-${Date.now()}`,
-        text: language === "ne" 
-          ? "माफ गर्नुहोस्, म अहिले जवाफ दिन सक्दिन। कृपया फेरि प्रयास गर्नुहोस्।"
-          : "Sorry, I couldn't process your request. Please try again.",
-        isUser: false,
-        timestamp: new Date(),
-      };
-      
-      setMessages((prev) => [...prev, errorMessage]);
-      
-      toast.error(
-        language === "ne" ? "त्रुटि" : "Error",
-        {
-          description: error instanceof Error ? error.message : "Failed to send message",
-        }
-      );
+      // Check if it's a session expired error
+      if (error instanceof Error && error.message.includes("Session expired")) {
+        // Logout user
+        logout();
+        
+        // Store message as pending and show login dialog
+        setPendingMessage({ text, isVoice: isVoiceInput });
+        setShowLoginDialog(true);
+        
+        toast.error(
+          language === "ne" ? "सत्र समाप्त भयो" : "Session Expired",
+          {
+            description: language === "ne"
+              ? "कृपया फेरि लग इन गर्नुहोस्"
+              : "Please login again to continue",
+          }
+        );
+      } else {
+        const errorMessage: Message = {
+          id: `error-${Date.now()}`,
+          text: language === "ne" 
+            ? "माफ गर्नुहोस्, म अहिले जवाफ दिन सक्दिन। कृपया फेरि प्रयास गर्नुहोस्।"
+            : "Sorry, I couldn't process your request. Please try again.",
+          isUser: false,
+          timestamp: new Date(),
+        };
+        
+        setMessages((prev) => [...prev, errorMessage]);
+        
+        toast.error(
+          language === "ne" ? "त्रुटि" : "Error",
+          {
+            description: error instanceof Error ? error.message : "Failed to send message",
+          }
+        );
+      }
     } finally {
       setIsTyping(false);
     }
@@ -302,6 +341,17 @@ export function ChatInterface() {
     }, 1000);
   };
 
+  // Handle successful login - send pending message
+  const handleLoginSuccess = () => {
+    if (pendingMessage) {
+      // Send the pending message after successful login
+      setTimeout(() => {
+        handleSendMessage(pendingMessage.text, pendingMessage.isVoice);
+        setPendingMessage(null);
+      }, 300);
+    }
+  };
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -392,6 +442,13 @@ export function ChatInterface() {
           />
         </div>
       </div>
+
+      {/* Login Dialog */}
+      <LoginDialog
+        open={showLoginDialog}
+        onOpenChange={setShowLoginDialog}
+        onSuccess={handleLoginSuccess}
+      />
     </div>
   );
 }
