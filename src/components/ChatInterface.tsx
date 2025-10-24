@@ -38,7 +38,7 @@ export function ChatInterface() {
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [pendingMessage, setPendingMessage] = useState<{ text: string; isVoice: boolean } | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const { language } = useLanguage();
+  const { language, voiceLanguage } = useLanguage();
   const { isAuthenticated, logout } = useAuth();
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -156,9 +156,10 @@ export function ChatInterface() {
       };
 
       // Generate audio for the response (but don't play yet)
+      // Always use voiceLanguage for speech (Nepali by default)
       let audioUrl: string | undefined;
       try {
-        audioUrl = await speechService.synthesizeToAudio(response, language);
+        audioUrl = await speechService.synthesizeToAudio(response, voiceLanguage);
         botResponse.audioUrl = audioUrl;
       } catch (audioError) {
         console.error("Error generating audio:", audioError);
@@ -241,7 +242,8 @@ export function ChatInterface() {
         }
       );
 
-      const recognizedText = await speechService.recognizeSpeech(language);
+      // Always use voiceLanguage for speech recognition (Nepali by default)
+      const recognizedText = await speechService.recognizeSpeech(voiceLanguage);
       
       if (recognizedText && recognizedText.trim()) {
         // Pass true to indicate this is a voice input
@@ -289,8 +291,8 @@ export function ChatInterface() {
       if (audioUrl) {
         await speechService.playAudio(audioUrl, true);
       } else {
-        // Generate and play
-        const newAudioUrl = await speechService.synthesizeToAudio(text, language);
+        // Generate and play (always use voiceLanguage for speech)
+        const newAudioUrl = await speechService.synthesizeToAudio(text, voiceLanguage);
         
         // Update message with audio URL for future replays
         setMessages(prev => 

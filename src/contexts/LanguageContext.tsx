@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
 
 type Language = "en" | "ne";
+type VoiceLanguage = "en" | "ne";
 
 interface Translations {
   title: string;
@@ -64,7 +65,9 @@ const translations: Record<Language, Translations> = {
 
 interface LanguageContextType {
   language: Language;
+  voiceLanguage: VoiceLanguage;
   setLanguage: (lang: Language) => void;
+  setVoiceLanguage: (lang: VoiceLanguage) => void;
   t: Translations;
 }
 
@@ -73,11 +76,44 @@ const LanguageContext = createContext<LanguageContextType | undefined>(
 );
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState<Language>("en");
+  // Initialize with localStorage value or default to Nepali
+  const [language, setLanguageState] = useState<Language>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("ui-language") as Language;
+      return saved || "ne";
+    }
+    return "ne";
+  });
+
+  // Voice language is always Nepali by default (independent of UI language)
+  const [voiceLanguage, setVoiceLanguageState] = useState<VoiceLanguage>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("voice-language") as VoiceLanguage;
+      return saved || "ne";
+    }
+    return "ne";
+  });
+
+  // Save language preference to localStorage when it changes
+  const handleSetLanguage = (lang: Language) => {
+    setLanguageState(lang);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("ui-language", lang);
+    }
+  };
+
+  const handleSetVoiceLanguage = (lang: VoiceLanguage) => {
+    setVoiceLanguageState(lang);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("voice-language", lang);
+    }
+  };
 
   const value = {
     language,
-    setLanguage,
+    voiceLanguage,
+    setLanguage: handleSetLanguage,
+    setVoiceLanguage: handleSetVoiceLanguage,
     t: translations[language],
   };
 
