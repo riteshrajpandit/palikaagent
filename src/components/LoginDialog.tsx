@@ -51,6 +51,7 @@ export function LoginDialog({ open, onOpenChange, onSuccess }: LoginDialogProps)
         password: password,
       });
 
+      // Show success message
       toast.success(
         language === "ne" ? "सफल" : "Success",
         {
@@ -63,11 +64,16 @@ export function LoginDialog({ open, onOpenChange, onSuccess }: LoginDialogProps)
       // Reset form
       setEmail("");
       setPassword("");
+      
+      // Close dialog first
       onOpenChange(false);
       
-      // Call success callback if provided
+      // Then call success callback if provided
+      // Small delay to ensure dialog close animation completes
       if (onSuccess) {
-        onSuccess();
+        setTimeout(() => {
+          onSuccess();
+        }, 100);
       }
     } catch (error) {
       console.error("Login error:", error);

@@ -115,16 +115,19 @@ export function ChatInterface() {
   const handleSendMessage = async (text: string, isVoiceInput: boolean = false) => {
     // Check if user is authenticated
     if (!isAuthenticated) {
-      setPendingMessage({ text, isVoice: isVoiceInput });
-      setShowLoginDialog(true);
-      toast.info(
-        language === "ne" ? "लग इन आवश्यक छ" : "Login Required",
-        {
-          description: language === "ne"
-            ? "कृपया सन्देश पठाउन लग इन गर्नुहोस्"
-            : "Please sign in to send messages",
-        }
-      );
+      // Only show login dialog if not already showing
+      if (!showLoginDialog) {
+        setPendingMessage({ text, isVoice: isVoiceInput });
+        setShowLoginDialog(true);
+        toast.info(
+          language === "ne" ? "लग इन आवश्यक छ" : "Login Required",
+          {
+            description: language === "ne"
+              ? "कृपया सन्देश पठाउन लग इन गर्नुहोस्"
+              : "Please sign in to send messages",
+          }
+        );
+      }
       return;
     }
 
@@ -344,13 +347,94 @@ export function ChatInterface() {
   };
 
   // Handle successful login - send pending message
-  const handleLoginSuccess = () => {
+  const handleChatLoginSuccess = () => {
+    // This is called after successful login from chat interface
+    // Close the dialog immediately
+    setShowLoginDialog(false);
+    
+    // Send pending message if exists
     if (pendingMessage) {
-      // Send the pending message after successful login
+      // Wait for auth state to update, then send the message
       setTimeout(() => {
-        handleSendMessage(pendingMessage.text, pendingMessage.isVoice);
-        setPendingMessage(null);
+        const messageToSend = { ...pendingMessage };
+        setPendingMessage(null); // Clear pending message first
+        
+        // Send the message directly without auth check since we just logged in
+        sendMessageDirectly(messageToSend.text, messageToSend.isVoice);
       }, 300);
+    }
+  };
+
+  const sendMessageDirectly = async (text: string, isVoiceInput: boolean = false) => {
+    // This bypasses the auth check and sends the message directly
+    // Used only after successful login with pending message
+    
+    // Stop any currently playing audio when sending a new message
+    speechService.stopCurrentAudio();
+    setSpeakingMessageId(null);
+
+    const userMessage: Message = {
+      id: `user-${Date.now()}`,
+      text,
+      isUser: true,
+      timestamp: new Date(),
+      isVoiceInput,
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setIsTyping(true);
+
+    try {
+      // Call the actual API
+      const response = await sendMessageToBot(text);
+      
+      const botResponse: Message = {
+        id: `bot-${Date.now()}`,
+        text: response,
+        isUser: false,
+        timestamp: new Date(),
+        isVoiceInput: false,
+      };
+
+      // Generate audio for the response (but don't play yet)
+      let audioUrl: string | undefined;
+      try {
+        audioUrl = await speechService.synthesizeToAudio(response, voiceLanguage);
+        botResponse.audioUrl = audioUrl;
+      } catch (audioError) {
+        console.error("Error generating audio:", audioError);
+      }
+      
+      setMessages((prev) => [...prev, botResponse]);
+      
+      // Auto-play ONLY if the user's message was sent via voice
+      if (isVoiceInput && audioUrl) {
+        setTimeout(() => {
+          handleSpeak(botResponse.id, response, audioUrl);
+        }, 500);
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+      
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        text: language === "ne" 
+          ? "माफ गर्नुहोस्, म अहिले जवाफ दिन सक्दिन। कृपया फेरि प्रयास गर्नुहोस्।"
+          : "Sorry, I couldn't process your request. Please try again.",
+        isUser: false,
+        timestamp: new Date(),
+      };
+      
+      setMessages((prev) => [...prev, errorMessage]);
+      
+      toast.error(
+        language === "ne" ? "त्रुटि" : "Error",
+        {
+          description: error instanceof Error ? error.message : "Failed to send message",
+        }
+      );
+    } finally {
+      setIsTyping(false);
     }
   };
 
@@ -445,11 +529,17 @@ export function ChatInterface() {
         </div>
       </div>
 
-      {/* Login Dialog */}
+      {/* Chat Login Dialog - with pending message handling */}
       <LoginDialog
         open={showLoginDialog}
-        onOpenChange={setShowLoginDialog}
-        onSuccess={handleLoginSuccess}
+        onOpenChange={(open) => {
+          setShowLoginDialog(open);
+          // If dialog is closed without successful login, clear pending message
+          if (!open && pendingMessage) {
+            setPendingMessage(null);
+          }
+        }}
+        onSuccess={handleChatLoginSuccess}
       />
     </div>
   );
