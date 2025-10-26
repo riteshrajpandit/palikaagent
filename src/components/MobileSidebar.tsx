@@ -4,10 +4,13 @@ import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
+  SheetTitle,
+  SheetDescription,
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { VisuallyHidden } from "@/components/ui/visually-hidden";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Menu,
@@ -65,6 +68,30 @@ export function MobileSidebar({
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="w-72 p-0">
+        <VisuallyHidden>
+          <SheetTitle>
+            {language === "ne" ? "नेभिगेसन मेनु" : "Navigation Menu"}
+          </SheetTitle>
+          <SheetDescription>
+            {language === "ne"
+              ? "च्याट इतिहास र मेनु विकल्पहरू पहुँच गर्नुहोस्"
+              : "Access chat history and menu options"}
+          </SheetDescription>
+        </VisuallyHidden>
+        
+        {/* Logo Section */}
+        <div className="p-4 border-b">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center shrink-0">
+              <MessageCircle className="h-4 w-4 text-white" />
+            </div>
+            <span className="font-semibold text-base">
+              {language === "ne" ? "पालिका एजेन्ट" : "Palika Agent"}
+            </span>
+          </div>
+        </div>
+
+        {/* Search */}
         <div className="p-4">
           <input
             type="search"

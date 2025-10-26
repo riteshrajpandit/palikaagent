@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, KeyboardEvent } from "react";
+import { useState, KeyboardEvent, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, Mic, Square } from "lucide-react";
@@ -23,6 +23,14 @@ export function ChatInput({
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
   const { t } = useLanguage();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-focus input on mount and after sending messages
+  useEffect(() => {
+    if (!disabled && !isListening) {
+      inputRef.current?.focus();
+    }
+  }, [disabled, isListening, message]); // Re-focus when message changes (after send)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMessage(e.target.value);
@@ -36,6 +44,7 @@ export function ChatInput({
     if (message.trim() && !disabled) {
       onSendMessage(message.trim());
       setMessage("");
+      // Focus will be restored automatically via useEffect when message state changes
     }
   };
 
@@ -50,12 +59,14 @@ export function ChatInput({
     <div className="flex gap-2 items-center">
       <div className="relative flex-1">
         <Input
+          ref={inputRef}
           value={message}
           onChange={handleInputChange}
           onKeyPress={handleKeyPress}
           placeholder={t.placeholder}
           disabled={disabled}
           className="pr-12 h-12 rounded-full bg-muted/50 border-muted focus-visible:ring-2 focus-visible:ring-primary"
+          autoFocus
         />
         <Button
           type="button"

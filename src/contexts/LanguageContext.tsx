@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
 type Language = "en" | "ne";
 type VoiceLanguage = "en" | "ne";
@@ -76,23 +76,24 @@ const LanguageContext = createContext<LanguageContextType | undefined>(
 );
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  // Initialize with localStorage value or default to Nepali
-  const [language, setLanguageState] = useState<Language>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("ui-language") as Language;
-      return saved || "ne";
-    }
-    return "ne";
-  });
+  // Always initialize with default "ne" on both server and client
+  const [language, setLanguageState] = useState<Language>("ne");
+  const [voiceLanguage, setVoiceLanguageState] = useState<VoiceLanguage>("ne");
 
-  // Voice language is always Nepali by default (independent of UI language)
-  const [voiceLanguage, setVoiceLanguageState] = useState<VoiceLanguage>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("voice-language") as VoiceLanguage;
-      return saved || "ne";
+  // Load from localStorage only after mounting (client-side only)
+  // This will cause a re-render on the client, but without hydration mismatch
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem("ui-language") as Language;
+    const savedVoiceLanguage = localStorage.getItem("voice-language") as VoiceLanguage;
+    
+    if (savedLanguage) {
+      setLanguageState(savedLanguage);
     }
-    return "ne";
-  });
+    if (savedVoiceLanguage) {
+      setVoiceLanguageState(savedVoiceLanguage);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Save language preference to localStorage when it changes
   const handleSetLanguage = (lang: Language) => {

@@ -40,32 +40,33 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen flex-col bg-background overflow-hidden">
-      <Header />
-      <div className="flex flex-1 overflow-hidden">
-        {/* Desktop Sidebar */}
-        <div className="hidden lg:block">
-          <Sidebar
-            onNewChat={handleNewChat}
-            chatHistory={chatHistory}
-            onSelectChat={handleSelectChat}
-            currentChatId={currentChatId}
-          />
-        </div>
+    <div className="flex h-screen bg-background overflow-hidden">
+      {/* Desktop Sidebar - Full height, left side */}
+      <div className="hidden lg:block">
+        <Sidebar
+          onNewChat={handleNewChat}
+          chatHistory={chatHistory}
+          onSelectChat={handleSelectChat}
+          currentChatId={currentChatId}
+        />
+      </div>
 
-        {/* Main Content */}
-        <main className="flex-1 flex flex-col overflow-hidden">
-          {/* Mobile Menu Button */}
-          <div className="lg:hidden flex items-center gap-2 p-4 border-b shrink-0">
+      {/* Main Content Area */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <Header>
+          {/* Mobile Hamburger Menu in Header */}
+          <div className="lg:hidden">
             <MobileSidebar
               onNewChat={handleNewChat}
               chatHistory={chatHistory}
               onSelectChat={handleSelectChat}
               currentChatId={currentChatId}
             />
-            <span className="text-sm font-medium">Palika Agent</span>
           </div>
-
+        </Header>
+        
+        {/* Main Content */}
+        <main className="flex-1 flex flex-col overflow-hidden">
           <ChatInterface key={chatKey} />
         </main>
       </div>

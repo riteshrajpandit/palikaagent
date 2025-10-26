@@ -52,7 +52,20 @@ export function Sidebar({
   ];
 
   return (
-    <aside className="w-64 border-r bg-muted/30 backdrop-blur-sm flex flex-col">
+    <aside className="w-64 h-screen border-r bg-muted/30 backdrop-blur-sm flex flex-col">
+      {/* Logo Section */}
+      <div className="p-3 border-b">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 rounded-lg bg-linear-to-br from-blue-500 to-green-500 flex items-center justify-center shrink-0">
+            <MessageCircle className="h-4 w-4 text-white" />
+          </div>
+          <span className="font-semibold text-base">
+            {language === "ne" ? "पालिका एजेन्ट" : "Palika Agent"}
+          </span>
+        </div>
+      </div>
+
+      {/* Search */}
       <div className="p-4">
         <input
           type="search"

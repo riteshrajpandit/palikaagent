@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -15,9 +15,13 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoginDialog } from "@/components/LoginDialog";
-import { Globe, Moon, Sun, Monitor, User, MessageCircle, LogIn, LogOut } from "lucide-react";
+import { Globe, Moon, Sun, Monitor, User, LogIn, LogOut } from "lucide-react";
 
-export function Header() {
+interface HeaderProps {
+  children?: ReactNode;
+}
+
+export function Header({ children }: HeaderProps) {
   const { language, setLanguage, t } = useLanguage();
   const { theme, setTheme } = useTheme();
   const { user, isAuthenticated, logout } = useAuth();
@@ -26,20 +30,16 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-lg">
       <div className="flex h-14 items-center justify-between px-4 lg:px-6">
-        {/* Left: Palika Agent Branding */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-              <MessageCircle className="h-4 w-4 text-white" />
-            </div>
-            <span className="font-semibold text-base">
-              {language === "ne" ? "पालिका एजेन्ट" : "Palika Agent"}
-            </span>
-          </div>
+        {/* Left: Mobile Hamburger Menu (passed as children) */}
+        <div className="flex items-center gap-3 lg:hidden">
+          {children}
+          <span className="font-semibold text-base">
+            {language === "ne" ? "पालिका एजेन्ट" : "Palika Agent"}
+          </span>
         </div>
 
         {/* Right: Controls & User */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 lg:ml-auto">
           {/* Language Switcher */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
