@@ -128,7 +128,7 @@ export function Header({ children }: HeaderProps) {
                       {user?.name}
                     </span>
                     <Avatar className="h-7 w-7">
-                      <AvatarFallback className="bg-linear-to-br from-purple-500 to-pink-500 text-white text-xs">
+                      <AvatarFallback className="bg-gradient-to-br from-[#00a79d] to-[#273b4b] text-white text-xs">
                         {user?.name?.charAt(0).toUpperCase() || <User className="h-4 w-4" />}
                       </AvatarFallback>
                     </Avatar>

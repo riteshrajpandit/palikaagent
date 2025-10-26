@@ -458,7 +458,7 @@ export function ChatInterface() {
             <div className="flex flex-col items-center justify-center min-h-[calc(100vh-16rem)] text-center px-4 py-12">
               <div className="max-w-2xl w-full space-y-8">
                 <div className="space-y-3">
-                  <h1 className="text-4xl md:text-5xl font-bold bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#00a79d] to-[#273b4b] bg-clip-text text-transparent">
                     {language === "ne" ? "नमस्ते" : "Hello"}
                   </h1>
                   <h2 className="text-3xl md:text-4xl font-semibold text-muted-foreground">
@@ -501,7 +501,7 @@ export function ChatInterface() {
               {isTyping && (
                 <div className="flex gap-3 mb-4">
                   <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                    <div className="h-4 w-4 rounded-full bg-linear-to-br from-purple-500 to-pink-500" />
+                    <div className="h-4 w-4 rounded-full bg-gradient-to-br from-[#00a79d] to-[#273b4b]" />
                   </div>
                   <div className="bg-muted rounded-2xl rounded-tl-sm px-4 py-3">
                     <div className="flex gap-1">

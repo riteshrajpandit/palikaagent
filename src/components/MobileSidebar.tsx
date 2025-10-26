@@ -82,7 +82,7 @@ export function MobileSidebar({
         {/* Logo Section */}
         <div className="p-4 border-b">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center shrink-0">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#00a79d] to-[#273b4b] flex items-center justify-center shrink-0">
               <MessageCircle className="h-4 w-4 text-white" />
             </div>
             <span className="font-semibold text-base">
