@@ -15,6 +15,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoginDialog } from "@/components/LoginDialog";
+import { toast } from "sonner";
 import { Globe, Moon, Sun, Monitor, User, LogIn, LogOut } from "lucide-react";
 
 interface HeaderProps {
@@ -26,6 +27,18 @@ export function Header({ children }: HeaderProps) {
   const { theme, setTheme } = useTheme();
   const { user, isAuthenticated, logout } = useAuth();
   const [showLoginDialog, setShowLoginDialog] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    toast.success(
+      language === "ne" ? "सफलतापूर्वक लग आउट भयो" : "Logged out successfully",
+      {
+        description: language === "ne"
+          ? "तपाईं आफ्नो खाताबाट लग आउट हुनुभयो"
+          : "You have been logged out of your account",
+      }
+    );
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-lg">
@@ -155,7 +168,7 @@ export function Header({ children }: HeaderProps) {
                     {language === "ne" ? "सेटिङहरू" : "Settings"}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout} className="text-red-600">
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                     <LogOut className="mr-2 h-4 w-4" />
                     {language === "ne" ? "लग आउट" : "Log out"}
                   </DropdownMenuItem>

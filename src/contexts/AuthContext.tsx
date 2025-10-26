@@ -59,6 +59,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     apiLogoutUser();
     setUser(null);
+    
+    // Note: Toast notification will be shown by the calling component
+    // to support bilingual messages
   };
 
   return (

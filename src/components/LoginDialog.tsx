@@ -77,14 +77,39 @@ export function LoginDialog({ open, onOpenChange, onSuccess }: LoginDialogProps)
       }
     } catch (error) {
       console.error("Login error:", error);
-      toast.error(
-        language === "ne" ? "लग इन असफल" : "Login Failed",
-        {
-          description: language === "ne"
-            ? "कृपया आफ्नो इमेल र पासवर्ड जाँच गर्नुहोस्"
-            : "Please check your email and password",
+      
+      // Determine error message based on error type
+      let errorTitle = language === "ne" ? "लग इन असफल" : "Login Failed";
+      let errorDescription = language === "ne"
+        ? "कृपया आफ्नो इमेल र पासवर्ड जाँच गर्नुहोस्"
+        : "Please check your email and password";
+      
+      if (error instanceof Error) {
+        // Handle specific error cases
+        if (error.message.includes("401") || error.message.includes("Unauthorized")) {
+          errorTitle = language === "ne" ? "अधिकृत छैन" : "Unauthorized";
+          errorDescription = language === "ne"
+            ? "गलत इमेल वा पासवर्ड"
+            : "Invalid email or password";
+        } else if (error.message.includes("403") || error.message.includes("Forbidden")) {
+          errorTitle = language === "ne" ? "पहुँच अस्वीकृत" : "Access Denied";
+          errorDescription = language === "ne"
+            ? "तपाईंसँग यो खाता पहुँच गर्ने अनुमति छैन"
+            : "You don't have permission to access this account";
+        } else if (error.message.includes("Network") || error.message.includes("Failed to fetch")) {
+          errorTitle = language === "ne" ? "नेटवर्क त्रुटि" : "Network Error";
+          errorDescription = language === "ne"
+            ? "कृपया आफ्नो इन्टरनेट जडान जाँच गर्नुहोस्"
+            : "Please check your internet connection";
+        } else if (error.message) {
+          errorDescription = error.message;
         }
-      );
+      }
+      
+      toast.error(errorTitle, {
+        description: errorDescription,
+        duration: 5000,
+      });
     } finally {
       setIsLoading(false);
     }

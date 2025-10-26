@@ -195,6 +195,7 @@ export function ChatInterface() {
             description: language === "ne"
               ? "कृपया फेरि लग इन गर्नुहोस्"
               : "Please login again to continue",
+            duration: 5000,
           }
         );
       } else {
