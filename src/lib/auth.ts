@@ -31,7 +31,8 @@ export interface LoginResponse {
   is_system_admin: boolean;
 }
 
-const AUTH_API_URL = "https://palika.amigaa.com/auth/v1";
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://palika.amigaa.com/api/v1";
+const AUTH_API_URL = BASE_URL.replace('/api/v1', '/auth/v1');
 
 /**
  * Login user with credentials

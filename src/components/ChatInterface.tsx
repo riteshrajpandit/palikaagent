@@ -5,12 +5,18 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatMessage } from "@/components/ChatMessage";
 import { ChatInput } from "@/components/ChatInput";
 import { SuggestionCard } from "@/components/SuggestionCard";
-import { LoginDialog } from "@/components/LoginDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { sendMessageToBot } from "@/lib/api";
 import { speechService } from "@/lib/speech";
 import { toast } from "sonner";
+import {
+  saveChat,
+  getChatById,
+  generateChatTitle,
+  generateChatPreview,
+  type Chat,
+} from "@/lib/chatHistory";
 import {
   Clock,
   TrendingUp,
@@ -29,17 +35,21 @@ interface Message {
   isVoiceInput?: boolean; // Track if message was sent via voice
 }
 
-export function ChatInterface() {
+interface ChatInterfaceProps {
+  currentChatId?: string;
+  onChatUpdate?: () => void; // Callback to notify parent of chat changes
+}
+
+export function ChatInterface({ currentChatId, onChatUpdate }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const [isUserTyping, setIsUserTyping] = useState(false);
-  const [showLoginDialog, setShowLoginDialog] = useState(false);
-  const [pendingMessage, setPendingMessage] = useState<{ text: string; isVoice: boolean } | null>(null);
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { language, voiceLanguage } = useLanguage();
-  const { isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const scrollToBottom = () => {
@@ -56,6 +66,68 @@ export function ChatInterface() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping]);
+
+  // Load chat when currentChatId changes
+  useEffect(() => {
+    if (currentChatId && isAuthenticated && user) {
+      const chat = getChatById(user.user_id, currentChatId);
+      if (chat) {
+        setMessages(chat.messages);
+        setActiveChatId(chat.id);
+      }
+    } else if (!currentChatId) {
+      // New chat - clear messages
+      setMessages([]);
+      setActiveChatId(null);
+    }
+  }, [currentChatId, isAuthenticated, user]);
+
+  // Save chat to localStorage whenever messages change (for authenticated users only)
+  useEffect(() => {
+    if (!isAuthenticated || !user || messages.length === 0) return;
+
+    const saveCurrentChat = () => {
+      const chatId = activeChatId || `chat-${Date.now()}`;
+      const isNewChat = !activeChatId;
+      
+      // Generate title from first user message
+      const firstUserMessage = messages.find((m) => m.isUser);
+      const title = firstUserMessage 
+        ? generateChatTitle(firstUserMessage.text, language)
+        : language === "ne" ? "नयाँ कुराकानी" : "New Chat";
+
+      const preview = generateChatPreview(messages);
+
+      const chat: Chat = {
+        id: chatId,
+        title,
+        preview,
+        messages,
+        createdAt: isNewChat ? new Date() : new Date(), // Keep original if exists
+        updatedAt: new Date(),
+      };
+
+      saveChat(user.user_id, chat);
+      
+      if (isNewChat) {
+        setActiveChatId(chatId);
+        // Only notify parent for NEW chats to add to sidebar
+        if (onChatUpdate) {
+          // Use requestIdleCallback or setTimeout to avoid blocking
+          if (typeof requestIdleCallback !== 'undefined') {
+            requestIdleCallback(() => onChatUpdate());
+          } else {
+            setTimeout(() => onChatUpdate(), 100);
+          }
+        }
+      }
+      // For existing chats, no need to refresh the entire sidebar
+    };
+
+    // Debounce save to avoid too many writes (increased to 1.5s for better performance)
+    const timeoutId = setTimeout(saveCurrentChat, 1500);
+    return () => clearTimeout(timeoutId);
+  }, [messages, isAuthenticated, user, language, onChatUpdate, activeChatId]);
 
   const suggestions = [
     {
@@ -113,24 +185,7 @@ export function ChatInterface() {
   };
 
   const handleSendMessage = async (text: string, isVoiceInput: boolean = false) => {
-    // Check if user is authenticated
-    if (!isAuthenticated) {
-      // Only show login dialog if not already showing
-      if (!showLoginDialog) {
-        setPendingMessage({ text, isVoice: isVoiceInput });
-        setShowLoginDialog(true);
-        toast.info(
-          language === "ne" ? "लग इन आवश्यक छ" : "Login Required",
-          {
-            description: language === "ne"
-              ? "कृपया सन्देश पठाउन लग इन गर्नुहोस्"
-              : "Please sign in to send messages",
-          }
-        );
-      }
-      return;
-    }
-
+    // Guest users can now send messages without authentication
     // Stop any currently playing audio when sending a new message
     speechService.stopCurrentAudio();
     setSpeakingMessageId(null);
@@ -180,43 +235,23 @@ export function ChatInterface() {
     } catch (error) {
       console.error("Error sending message:", error);
       
-      // Check if it's a session expired error
-      if (error instanceof Error && error.message.includes("Session expired")) {
-        // Logout user
-        logout();
-        
-        // Store message as pending and show login dialog
-        setPendingMessage({ text, isVoice: isVoiceInput });
-        setShowLoginDialog(true);
-        
-        toast.error(
-          language === "ne" ? "सत्र समाप्त भयो" : "Session Expired",
-          {
-            description: language === "ne"
-              ? "कृपया फेरि लग इन गर्नुहोस्"
-              : "Please login again to continue",
-            duration: 5000,
-          }
-        );
-      } else {
-        const errorMessage: Message = {
-          id: `error-${Date.now()}`,
-          text: language === "ne" 
-            ? "माफ गर्नुहोस्, म अहिले जवाफ दिन सक्दिन। कृपया फेरि प्रयास गर्नुहोस्।"
-            : "Sorry, I couldn't process your request. Please try again.",
-          isUser: false,
-          timestamp: new Date(),
-        };
-        
-        setMessages((prev) => [...prev, errorMessage]);
-        
-        toast.error(
-          language === "ne" ? "त्रुटि" : "Error",
-          {
-            description: error instanceof Error ? error.message : "Failed to send message",
-          }
-        );
-      }
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        text: language === "ne" 
+          ? "माफ गर्नुहोस्, म अहिले जवाफ दिन सक्दिन। कृपया फेरि प्रयास गर्नुहोस्।"
+          : "Sorry, I couldn't process your request. Please try again.",
+        isUser: false,
+        timestamp: new Date(),
+      };
+      
+      setMessages((prev) => [...prev, errorMessage]);
+      
+      toast.error(
+        language === "ne" ? "त्रुटि" : "Error",
+        {
+          description: error instanceof Error ? error.message : "Failed to send message",
+        }
+      );
     } finally {
       setIsTyping(false);
     }
@@ -347,98 +382,6 @@ export function ChatInterface() {
     }, 1000);
   };
 
-  // Handle successful login - send pending message
-  const handleChatLoginSuccess = () => {
-    // This is called after successful login from chat interface
-    // Close the dialog immediately
-    setShowLoginDialog(false);
-    
-    // Send pending message if exists
-    if (pendingMessage) {
-      // Wait for auth state to update, then send the message
-      setTimeout(() => {
-        const messageToSend = { ...pendingMessage };
-        setPendingMessage(null); // Clear pending message first
-        
-        // Send the message directly without auth check since we just logged in
-        sendMessageDirectly(messageToSend.text, messageToSend.isVoice);
-      }, 300);
-    }
-  };
-
-  const sendMessageDirectly = async (text: string, isVoiceInput: boolean = false) => {
-    // This bypasses the auth check and sends the message directly
-    // Used only after successful login with pending message
-    
-    // Stop any currently playing audio when sending a new message
-    speechService.stopCurrentAudio();
-    setSpeakingMessageId(null);
-
-    const userMessage: Message = {
-      id: `user-${Date.now()}`,
-      text,
-      isUser: true,
-      timestamp: new Date(),
-      isVoiceInput,
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setIsTyping(true);
-
-    try {
-      // Call the actual API
-      const response = await sendMessageToBot(text);
-      
-      const botResponse: Message = {
-        id: `bot-${Date.now()}`,
-        text: response,
-        isUser: false,
-        timestamp: new Date(),
-        isVoiceInput: false,
-      };
-
-      // Generate audio for the response (but don't play yet)
-      let audioUrl: string | undefined;
-      try {
-        audioUrl = await speechService.synthesizeToAudio(response, voiceLanguage);
-        botResponse.audioUrl = audioUrl;
-      } catch (audioError) {
-        console.error("Error generating audio:", audioError);
-      }
-      
-      setMessages((prev) => [...prev, botResponse]);
-      
-      // Auto-play ONLY if the user's message was sent via voice
-      if (isVoiceInput && audioUrl) {
-        setTimeout(() => {
-          handleSpeak(botResponse.id, response, audioUrl);
-        }, 500);
-      }
-    } catch (error) {
-      console.error("Error sending message:", error);
-      
-      const errorMessage: Message = {
-        id: `error-${Date.now()}`,
-        text: language === "ne" 
-          ? "माफ गर्नुहोस्, म अहिले जवाफ दिन सक्दिन। कृपया फेरि प्रयास गर्नुहोस्।"
-          : "Sorry, I couldn't process your request. Please try again.",
-        isUser: false,
-        timestamp: new Date(),
-      };
-      
-      setMessages((prev) => [...prev, errorMessage]);
-      
-      toast.error(
-        language === "ne" ? "त्रुटि" : "Error",
-        {
-          description: error instanceof Error ? error.message : "Failed to send message",
-        }
-      );
-    } finally {
-      setIsTyping(false);
-    }
-  };
-
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -458,7 +401,7 @@ export function ChatInterface() {
             <div className="flex flex-col items-center justify-center min-h-[calc(100vh-16rem)] text-center px-4 py-12">
               <div className="max-w-2xl w-full space-y-8">
                 <div className="space-y-3">
-                  <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#00a79d] to-[#273b4b] bg-clip-text text-transparent">
+                  <h1 className="text-4xl md:text-5xl font-bold bg-linear-to-r from-[#00a79d] to-[#273b4b] bg-clip-text text-transparent">
                     {language === "ne" ? "नमस्ते" : "Hello"}
                   </h1>
                   <h2 className="text-3xl md:text-4xl font-semibold text-muted-foreground">
@@ -501,7 +444,7 @@ export function ChatInterface() {
               {isTyping && (
                 <div className="flex gap-3 mb-4">
                   <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                    <div className="h-4 w-4 rounded-full bg-gradient-to-br from-[#00a79d] to-[#273b4b]" />
+                    <div className="h-4 w-4 rounded-full bg-linear-to-br from-[#00a79d] to-[#273b4b]" />
                   </div>
                   <div className="bg-muted rounded-2xl rounded-tl-sm px-4 py-3">
                     <div className="flex gap-1">
@@ -529,19 +472,6 @@ export function ChatInterface() {
           />
         </div>
       </div>
-
-      {/* Chat Login Dialog - with pending message handling */}
-      <LoginDialog
-        open={showLoginDialog}
-        onOpenChange={(open) => {
-          setShowLoginDialog(open);
-          // If dialog is closed without successful login, clear pending message
-          if (!open && pendingMessage) {
-            setPendingMessage(null);
-          }
-        }}
-        onSuccess={handleChatLoginSuccess}
-      />
     </div>
   );
 }

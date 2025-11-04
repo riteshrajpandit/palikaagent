@@ -229,14 +229,15 @@ Password: hellopalika@123
 
 ## Environment Variables
 
-No additional environment variables needed. Uses existing:
+Uses the base URL environment variable:
 ```
-NEXT_PUBLIC_API_URL=https://palika.amigaa.com/api/v1/palika/bot/
+NEXT_PUBLIC_BASE_URL=https://palika.amigaa.com/api/v1
 ```
 
-Auth API endpoint is hardcoded in `lib/auth.ts`:
+Auth API endpoint is derived in `lib/auth.ts`:
 ```typescript
-const AUTH_API_URL = "https://palika.amigaa.com/auth/v1";
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://palika.amigaa.com/api/v1";
+const AUTH_API_URL = BASE_URL.replace('/api/v1', '/auth/v1');
 ```
 
 ## Future Enhancements

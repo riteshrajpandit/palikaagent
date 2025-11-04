@@ -41,7 +41,7 @@ cp .env.example .env.local
 Create a `.env.local` file in the root directory:
 
 ```env
-NEXT_PUBLIC_API_URL=https://palika.amigaa.com/api/v1/palika/bot/
+NEXT_PUBLIC_BASE_URL=https://palika.amigaa.com/api/v1
 NEXT_PUBLIC_AZURE_SPEECH_KEY=your_azure_speech_key
 NEXT_PUBLIC_AZURE_SPEECH_REGION=southeastasia
 ```

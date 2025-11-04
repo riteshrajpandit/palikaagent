@@ -1,7 +1,8 @@
 import axios from "axios";
 import { getAccessToken } from "./auth";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://palika.amigaa.com/api/v1/palika/bot/";
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://palika.amigaa.com/api/v1";
+const API_URL = `${BASE_URL}/palika/bot/`;
 
 export interface ApiResponse {
   success: boolean;
@@ -10,20 +11,22 @@ export interface ApiResponse {
 
 export async function sendMessageToBot(query: string): Promise<string> {
   try {
-    // Get access token from cookies
+    // Get access token from cookies (optional for guests)
     const accessToken = getAccessToken();
     
-    if (!accessToken) {
-      throw new Error("Authentication required. Please login to continue.");
+    // Build headers - only include Authorization if token exists
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
     }
 
     const response = await axios.post<ApiResponse>(API_URL, {
       query: query,
     }, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-      },
+      headers,
       timeout: 30000, // 30 second timeout
     });
 
@@ -37,13 +40,13 @@ export async function sendMessageToBot(query: string): Promise<string> {
     
     if (axios.isAxiosError(error)) {
       if (error.response) {
-        // Handle 401 Unauthorized - token might be expired
+        // Handle 401 Unauthorized - inform but don't force login
         if (error.response.status === 401) {
-          throw new Error("Session expired. Please login again.");
+          throw new Error("Authentication failed. Some features may be limited.");
         }
         // Handle 403 Forbidden
         if (error.response.status === 403) {
-          throw new Error("Access denied. You don't have permission to perform this action.");
+          throw new Error("Access denied. Please login for full access.");
         }
         throw new Error(`API error: ${error.response.status} - ${error.response.statusText}`);
       } else if (error.request) {

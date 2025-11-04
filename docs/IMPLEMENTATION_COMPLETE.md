@@ -88,7 +88,7 @@ src/
 
 ### Environment Variables (.env.local)
 ```env
-NEXT_PUBLIC_API_URL=https://palika.amigaa.com/api/v1/palika/bot/
+NEXT_PUBLIC_BASE_URL=https://palika.amigaa.com/api/v1
 NEXT_PUBLIC_AZURE_SPEECH_KEY=9CxapA1HOcp61200YghpbiBa883L31bbgwAdDE7CvTrBPgcCR2tVJQQJ99BJACqBBLyXJ3w3AAAYACOGvz6t
 NEXT_PUBLIC_AZURE_SPEECH_REGION=southeastasia
 ```

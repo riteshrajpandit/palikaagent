@@ -14,6 +14,24 @@ interface ChatMessageProps {
   hasAudio?: boolean;
 }
 
+// Function to parse message and convert **text** to bold
+function parseMessageWithBold(message: string) {
+  const parts = message.split(/(\*\*.*?\*\*)/g);
+  
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      // Remove ** and make it bold
+      const boldText = part.slice(2, -2);
+      return (
+        <strong key={index} className="font-bold">
+          {boldText}
+        </strong>
+      );
+    }
+    return <span key={index}>{part}</span>;
+  });
+}
+
 export function ChatMessage({
   message,
   isUser,
@@ -55,7 +73,7 @@ export function ChatMessage({
           )}
         >
           <p className="text-sm leading-relaxed whitespace-pre-wrap wrap-break-word">
-            {message}
+            {parseMessageWithBold(message)}
           </p>
         </div>
         <div className="flex items-center gap-2 mt-1 px-1">
