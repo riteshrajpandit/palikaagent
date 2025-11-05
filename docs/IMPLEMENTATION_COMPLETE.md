@@ -89,8 +89,8 @@ src/
 ### Environment Variables (.env.local)
 ```env
 NEXT_PUBLIC_BASE_URL=https://palika.amigaa.com/api/v1
-NEXT_PUBLIC_AZURE_SPEECH_KEY=9CxapA1HOcp61200YghpbiBa883L31bbgwAdDE7CvTrBPgcCR2tVJQQJ99BJACqBBLyXJ3w3AAAYACOGvz6t
-NEXT_PUBLIC_AZURE_SPEECH_REGION=southeastasia
+NEXT_PUBLIC_AZURE_SPEECH_KEY=
+NEXT_PUBLIC_AZURE_SPEECH_REGION=
 ```
 
 ⚠️ **IMPORTANT:** Never commit `.env.local` to git! It's already in `.gitignore`.
