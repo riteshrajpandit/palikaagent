@@ -402,12 +402,12 @@ export function ChatInterface({ currentChatId, onChatUpdate }: ChatInterfaceProp
   }, []);
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden touch-none">
+    <div className="flex flex-col h-full w-full overflow-hidden">
       {/* Scrollable messages area - Full height minus input */}
-      <div className="flex-1 overflow-hidden touch-pan-y">
-        <ScrollArea ref={scrollAreaRef} className="h-full smooth-scroll">
+      <div className="flex-1 overflow-hidden">
+        <ScrollArea ref={scrollAreaRef} className="h-full smooth-scroll touch-pan-y">
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] sm:min-h-[calc(100vh-16rem)] text-center px-3 sm:px-4 py-6 sm:py-12">
+            <div className="flex flex-col items-center justify-center h-full text-center px-3 sm:px-4 py-6 sm:py-12">
               <div className="max-w-2xl w-full space-y-4 sm:space-y-8">
                 <div className="space-y-2 sm:space-y-3">
                   <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-linear-to-r from-[#00a79d] to-[#273b4b] bg-clip-text text-transparent">
@@ -420,7 +420,7 @@ export function ChatInterface({ currentChatId, onChatUpdate }: ChatInterfaceProp
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3 mt-6 sm:mt-12">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3 mt-6 sm:mt-8">
                   {suggestions.map((suggestion, index) => (
                     <SuggestionCard
                       key={index}
