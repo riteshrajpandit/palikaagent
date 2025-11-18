@@ -97,7 +97,7 @@ export default function Home() {
   }, [user, currentChatId, language]);
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex h-screen bg-background overflow-hidden no-overscroll">
       {/* Desktop Sidebar - Full height, left side */}
       <div className="hidden lg:block">
         <Sidebar
@@ -110,7 +110,7 @@ export default function Home() {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden h-full">
         <Header>
           {/* Mobile Hamburger Menu in Header */}
           <div className="lg:hidden">
@@ -124,8 +124,8 @@ export default function Home() {
           </div>
         </Header>
         
-        {/* Main Content */}
-        <main className="flex-1 flex flex-col overflow-hidden">
+        {/* Main Content - Mobile optimized with proper overflow */}
+        <main className="flex-1 flex flex-col overflow-hidden min-h-0">
           <ChatInterface 
             key={chatKey} 
             currentChatId={currentChatId}

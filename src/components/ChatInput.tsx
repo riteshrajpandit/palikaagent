@@ -32,6 +32,27 @@ export function ChatInput({
     }
   }, [disabled, isListening, message]); // Re-focus when message changes (after send)
 
+  // Handle mobile keyboard - scroll to input when focused
+  useEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
+
+    const handleFocus = () => {
+      // On mobile, scroll the input into view when keyboard opens
+      if (window.innerWidth < 1024) {
+        setTimeout(() => {
+          input.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 300); // Delay to allow keyboard animation
+      }
+    };
+
+    input.addEventListener('focus', handleFocus);
+
+    return () => {
+      input.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMessage(e.target.value);
     // Notify parent that user is typing
@@ -56,7 +77,7 @@ export function ChatInput({
   };
 
   return (
-    <div className="flex gap-2 items-center">
+    <div className="flex gap-1.5 sm:gap-2 items-center">
       <div className="relative flex-1">
         <Input
           ref={inputRef}
@@ -65,7 +86,7 @@ export function ChatInput({
           onKeyPress={handleKeyPress}
           placeholder={t.placeholder}
           disabled={disabled}
-          className="pr-12 h-12 rounded-full bg-muted/50 border-muted focus-visible:ring-2 focus-visible:ring-primary"
+          className="pr-11 sm:pr-12 h-11 sm:h-12 rounded-full bg-muted/50 border-muted focus-visible:ring-2 focus-visible:ring-primary text-sm sm:text-base"
           autoFocus
         />
         <Button
@@ -74,7 +95,7 @@ export function ChatInput({
           variant="ghost"
           onClick={onVoiceInput}
           disabled={disabled}
-          className={`absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full ${
+          className={`absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9 sm:h-10 sm:w-10 rounded-full ${
             isListening
               ? "bg-red-500 hover:bg-red-600 text-white animate-pulse"
               : "hover:bg-primary/10"
@@ -82,9 +103,9 @@ export function ChatInput({
           title={isListening ? t.listening : t.voiceButton}
         >
           {isListening ? (
-            <Square className="h-4 w-4" />
+            <Square className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           ) : (
-            <Mic className="h-4 w-4" />
+            <Mic className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           )}
         </Button>
       </div>
@@ -92,9 +113,9 @@ export function ChatInput({
         onClick={handleSend}
         disabled={!message.trim() || disabled}
         size="icon"
-        className="h-12 w-12 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+        className="h-11 w-11 sm:h-12 sm:w-12 rounded-full shadow-lg hover:shadow-xl transition-shadow"
       >
-        <Send className="h-4 w-4" />
+        <Send className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
       </Button>
     </div>
   );
