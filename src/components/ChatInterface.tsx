@@ -402,25 +402,25 @@ export function ChatInterface({ currentChatId, onChatUpdate }: ChatInterfaceProp
   }, []);
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden">
-      {/* Scrollable messages area - Full height minus input */}
-      <div className="flex-1 overflow-hidden">
-        <ScrollArea ref={scrollAreaRef} className="h-full smooth-scroll touch-pan-y">
+    <div className="relative flex flex-col h-full w-full">
+      {/* Scrollable messages area with padding for fixed input */}
+      <ScrollArea ref={scrollAreaRef} className="h-full w-full">
+        <div className="pb-20 sm:pb-24">
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center px-3 sm:px-4 py-6 sm:py-12">
-              <div className="max-w-2xl w-full space-y-4 sm:space-y-8">
-                <div className="space-y-2 sm:space-y-3">
-                  <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-linear-to-r from-[#00a79d] to-[#273b4b] bg-clip-text text-transparent">
+            <div className="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] text-center px-4 py-6">
+              <div className="max-w-2xl w-full space-y-4 sm:space-y-6">
+                <div className="space-y-1.5 sm:space-y-2">
+                  <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold bg-linear-to-r from-[#00a79d] to-[#273b4b] bg-clip-text text-transparent">
                     {language === "ne" ? "नमस्ते" : "Hello"}
                   </h1>
-                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-muted-foreground">
+                  <h2 className="text-base sm:text-xl md:text-2xl font-semibold text-muted-foreground">
                     {language === "ne"
                       ? "आज म तपाईंलाई कसरी मद्दत गर्न सक्छु?"
-                      : "How can i help you today?"}
+                      : "How can I help you today?"}
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3 mt-6 sm:mt-8">
+                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 sm:gap-3 mt-4 sm:mt-6">
                   {suggestions.map((suggestion, index) => (
                     <SuggestionCard
                       key={index}
@@ -466,13 +466,14 @@ export function ChatInterface({ currentChatId, onChatUpdate }: ChatInterfaceProp
               )}
             </div>
           )}
-        </ScrollArea>
-      </div>
+        </div>
+      </ScrollArea>
 
-      {/* Fixed input field at bottom - Mobile optimized with keyboard handling */}
+      {/* Absolutely positioned input - stays fixed at bottom like ChatGPT */}
       <div 
         ref={inputContainerRef}
-        className="shrink-0 sticky bottom-0 lg:relative lg:bottom-auto border-t bg-background/98 backdrop-blur-lg px-3 py-3 sm:p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] safe-area-inset-bottom z-50"
+        className="absolute bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur-md px-4 py-2.5 sm:py-3 z-50"
+        style={{ boxShadow: '0 -2px 10px rgba(0,0,0,0.1)' }}
       >
         <div className="max-w-3xl mx-auto">
           <ChatInput

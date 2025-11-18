@@ -116,8 +116,15 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    overscroll-behavior-y: auto;
+    height: 100%;
+  }
   body {
     @apply bg-background text-foreground;
+    overscroll-behavior-y: auto;
+    overscroll-behavior-x: none;
+    height: 100%;
   }
 }
 

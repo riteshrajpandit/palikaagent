@@ -97,7 +97,7 @@ export default function Home() {
   }, [user, currentChatId, language]);
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden no-overscroll">
+    <div className="flex h-screen bg-background">
       {/* Desktop Sidebar - Full height, left side */}
       <div className="hidden lg:block">
         <Sidebar
